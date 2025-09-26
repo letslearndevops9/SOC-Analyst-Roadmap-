@@ -2,7 +2,7 @@
 
 ## 🎯 Objectives
 
-By end of Month 1, you should be comfortable with:
+By the end of Month 1, you should be comfortable with:
 
 - Key security & IR concepts (kill chain, MITRE ATT&CK, incident flow)
 - Basics of threat intelligence (TTPs, IOCs/IOAs)
