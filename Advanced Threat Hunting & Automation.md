@@ -1,210 +1,167 @@
-Advanced Threat Hunting & Automation — README.md
+# Advanced Threat Hunting & Automation
 
-Module: Advanced Threat Hunting & Automation
-Duration: 4 weeks (recommended)
-Goal: Learn to operationalize threat intelligence, author YARA & Sigma detections, automate enrichment and log parsing, and ship detection artifacts into a SIEM pipeline (Sigma → Splunk/ELK). Produce reusable scripts, Sigma/YARA rules, and at least one automated IOC enrichment notebook for your GitHub portfolio.
+**Module Duration:** 4 weeks (recommended)  
+**Goal:** Learn to operationalize threat intelligence, author YARA & Sigma detections, automate enrichment and log parsing, and ship detection artifacts into a SIEM pipeline (Sigma → Splunk/ELK). Produce reusable scripts, Sigma/YARA rules, and at least one automated IOC enrichment notebook for your GitHub portfolio.
 
-Quick resource highlights: Sigma (rule format & converters), Florian Roth’s rule collections (YARA / IOCs), MISP/OpenCTI (TIPs), AlienVault OTX & VirusTotal APIs for enrichment. 
-VirusTotal Docs
-+4
-GitHub
-+4
-GitHub
-+4
+---
 
-Concepts (short)
+## Quick Resource Highlights
 
-Threat intel feeds & enrichment: ingest IOCs from TIPs (MISP, OpenCTI) and public feeds (AlienVault OTX); enrich IOCs with VirusTotal / OTX metadata to prioritize. 
-GitHub
-+2
-GitHub
-+2
+- **Sigma:** [sigmahq.io](https://sigmahq.io/) (rule format & converters)
+- **Rule Collections:** Florian Roth’s [YARA](https://github.com/Neo23x0/signature-base) / [IOCs](https://github.com/Neo23x0/threat-intel)
+- **TIPs:** [MISP](https://github.com/MISP/MISP), [OpenCTI](https://github.com/OpenCTI-Platform/opencti)
+- **Enrichment APIs:** [AlienVault OTX](https://otx.alienvault.com/api), [VirusTotal](https://developers.virustotal.com/reference/overview)
+- **Automation:** Python, PowerShell
+
+---
 
-Advanced hunting with YARA & Sigma: use YARA to detect binary/memory artifacts and Sigma to express platform-agnostic log detections; convert Sigma → Splunk/ELK with Sigma converters. 
-GitHub
-+1
+## Concepts
 
-Automation: use Python & PowerShell to parse logs, extract IOCs, call enrichment APIs (VirusTotal / OTX), and automatically open incidents or create SIEM alerts.
+- **Threat Intel Feeds & Enrichment:** Ingest IOCs from TIPs (MISP, OpenCTI) and public feeds (AlienVault OTX); enrich IOCs with VirusTotal / OTX metadata to prioritize.
+- **Advanced Hunting with YARA & Sigma:** Use YARA to detect binary/memory artifacts and Sigma to express platform-agnostic log detections; convert Sigma → Splunk/ELK with Sigma converters.
+- **Automation:** Use Python & PowerShell to parse logs, extract IOCs, call enrichment APIs, and automatically open incidents or create SIEM alerts.
 
-Skills to build
+---
 
-Write reliable YARA rules for common malware families and generic suspicious patterns. (See Florian Roth / neo23x0 repos for examples). 
-GitHub
+## Skills to Build
 
-Build expressive Sigma rules and convert them to Splunk / ELK queries using Sigma CLI / pySigma. 
-sigmahq.io
+- Write reliable **YARA rules** for common malware families and generic suspicious patterns. (See Florian Roth / neo23x0 repos for examples.)
+- Build expressive **Sigma rules** and convert them to Splunk / ELK queries using Sigma CLI / pySigma.
+- **Script automation:** Python for API calls & parsing; PowerShell for Windows endpoint automation and evidence collection.
+- Create a **Sigma→Splunk pipeline** (repo + CI job) to test and push converted rules into a lab Splunk instance.
 
-Script automation: Python for API calls & parsing; PowerShell for Windows endpoint automation and evidence collection.
+---
 
-Create a Sigma→Splunk pipeline (repo + CI job) to test and push converted rules into a lab Splunk instance.
+## Hands-on Labs
 
-Hands-on Labs (step-by-step)
+### Lab 1 — Build Sigma → Splunk Pipeline
 
-Lab environment: isolated lab network with Windows victim(s), Linux analyst/sensor, and a SIEM (Splunk Free or ELK). Keep snapshots.
+**Goal:** Convert Sigma rules to Splunk and push into your Splunk lab automatically.
 
-Lab 1 — Build Sigma → Splunk pipeline (deliverable: tools/sigma-pipeline/)
+**Steps:**
+1. Install Sigma CLI (or pySigma).
+2. Create a local `sigma/` directory with sample rules.
+3. Script conversion:  
+   ```sh
+   sigma convert -t splunk -c config/splunk.yml sigma/*.yml -o converted/splunk/
+   ```
+4. Commit SPL files. Create a CI job (GitHub Actions) to upload SPL queries to Splunk or place into a monitored directory.
+5. In Splunk, create saved searches from uploaded SPL and attach alerts. Test with BOTS dataset or lab logs.
 
-Goal: Convert Sigma rules to Splunk and push into your Splunk lab automatically.
+**Deliverables:**
+- `tools/sigma-pipeline/convert.sh`
+- `converted/splunk/` (SPL files)
+- `.github/workflows/deploy-sigma.yml`
 
-Steps
+---
 
-Install Sigma CLI (or pySigma) locally or in a container (see Sigma resources).
+### Lab 2 — Write & Test YARA Rules
 
-Create a local sigma/ directory with sample rules (copy detections/sigma/*.yml).
+**Goal:** Author YARA rules that catch malware sample or suspicious patterns.
 
-Create a script to convert all Sigma → Splunk SPL:
+**Steps:**
+1. Pick a test sample (friendly or from LOKI/THOR).
+2. Create a YARA rule template (`detections/yara/generic-suspicious-strings.yar`):
 
-# example using sigma-cli (pseudo)
-sigma convert -t splunk -c config/splunk.yml sigma/*.yml -o converted/splunk/
+   ```yara
+   rule Suspicious_Powershell_Encoder
+   {
+     meta:
+       author = "Your Name"
+       description = "Detect base64-encoded PowerShell one-liners"
+       date = "2025-09-26"
+     strings:
+       $enc1 = "powershell -enc" nocase
+       $enc2 = "Invoke-Expression" nocase
+     condition:
+       any of ($enc*) 
+   }
+   ```
 
+3. Test locally:
+   ```sh
+   yara -w detections/yara/generic-suspicious-strings.yar samples/ -r
+   ```
 
-(Use pySigma / sigmac tool; see Sigma docs for exact CLI flags). 
-sigmahq.io
+**Deliverables:**
+- YARA rules in `detections/yara/` with README
 
-Commit converted SPL files to converted/splunk/. Create a small CI job (GitHub Actions) that on push calls a script to upload the SPL queries to Splunk via the REST API (or place into a monitored directory).
+---
 
-In Splunk lab, create saved searches from the uploaded SPL and attach alerts. Test by replaying BOTS dataset or your lab logs.
+### Lab 3 — IOC Enrichment Automation
 
-Deliverables
+**Goal:** Build Python script to enrich IOCs with VirusTotal and OTX metadata.
 
-tools/sigma-pipeline/convert.sh (or Python wrapper)
+**Steps:**
+1. Create `tools/enrich/requirements.txt` (requests, python-dotenv).
+2. Create `.env` with keys (do not commit secrets).
+3. Python snippet:
 
-converted/splunk/ (SPL files)
+   ```python
+   import os, requests
+   VT_KEY = os.getenv("VT_API_KEY")
+   OTX_KEY = os.getenv("OTX_API_KEY")
+   def vt_lookup_hash(h):
+       url = f"https://www.virustotal.com/api/v3/files/{h}"
+       headers = {"x-apikey": VT_KEY}
+       r = requests.get(url, headers=headers)
+       return r.json() if r.status_code==200 else None
+   def otx_indicator(indicator):
+       url = f"https://otx.alienvault.com/api/v1/indicators/ipv4/{indicator}/general"
+       headers = {"X-OTX-API-KEY": OTX_KEY}
+       r = requests.get(url, headers=headers)
+       return r.json() if r.status_code==200 else None
+   ```
 
-GitHub Actions workflow /.github/workflows/deploy-sigma.yml
+4. Run the script with `iocs.txt`, produce `enriched_iocs.csv`.
 
-Lab 2 — Write & test YARA rules (deliverable: detections/yara/)
+**Deliverables:**
+- `tools/enrich/virus_otx_enrich.py`
+- Sample `iocs.txt` and `enriched_iocs.csv`
 
-Goal: Author YARA rules that catch a test malware sample or suspicious string patterns in memory/dumped files.
+---
 
-Steps
+### Lab 4 — Script IOC Extraction from Logs
 
-Pick an example (friendly test sample or LOKI/THOR sample). Use rule examples from Florian Roth / signature-base as inspiration. 
-GitHub
-+1
+**Goal:** Script parses log files and extracts IOCs automatically.
 
-Create a YARA rule template detections/yara/generic-suspicious-strings.yar:
+**Steps:**
+1. Write `tools/parse_logs/parse_iocs.py`:
+   - Accepts log file (json/ndjson or CSV)
+   - Regex-extracts IPs, domains, hashes
+   - Deduplicates and writes `iocs_extracted.txt`
+2. Example regex snippets (Python):
 
-rule Suspicious_Powershell_Encoder
-{
-  meta:
-    author = "Your Name"
-    description = "Detect base64-encoded PowerShell one-liners in files or memory"
-    date = "2025-09-26"
-  strings:
-    $enc1 = "powershell -enc" nocase
-    $enc2 = "Invoke-Expression" nocase
-  condition:
-    any of ($enc*) 
-}
+   ```python
+   import re
+   ip_re = re.compile(r"(?:\d{1,3}\.){3}\d{1,3}")
+   hash_re = re.compile(r"\b[a-fA-F0-9]{64}\b")
+   domain_re = re.compile(r"\b(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}\b")
+   def extract_iocs(text):
+       return set(ip_re.findall(text)) | set(hash_re.findall(text)) | set(domain_re.findall(text))
+   ```
 
+3. Pipe parsed IOCs into enrichment script.
 
-Test rule locally with yara against a set of sample files or memory dumps:
+**Deliverables:**
+- `tools/parse_logs/parse_iocs.py` + unit test examples
 
-yara -w detections/yara/generic-suspicious-strings.yar samples/ -r
+---
 
+## TryHackMe & Lab References
 
-If you want runtime scanning, integrate YARA into your pipeline (Loki/THOR or custom scanner).
+- **TryHackMe rooms:** Threat Hunting with YARA, SOC/Detection Engineering (Sigma, SIEM-focused)
+- **Handbook:** Blue Team Handbook (SOC/SIEM/hunting use-cases)
 
-Deliverables
+---
 
-YARA rules in detections/yara/ with README explaining test methodology and false positive notes.
+## Sample Sigma Rule
 
-Lab 3 — IOC enrichment automation (VirusTotal & OTX) (deliverable: tools/enrich/virus_otx_enrich.py)
-
-Goal: Build a Python script that takes a list of IOCs (IPs, domains, hashes) and enriches them with VirusTotal and OTX metadata, outputting a prioritized CSV/JSON.
-
-Steps
-
-Create tools/enrich/requirements.txt (requests, python-dotenv).
-
-Create .env with VT_API_KEY and OTX_API_KEY (don’t commit secrets).
-
-Minimal Python snippet (replace <API_KEY> with env variable usage):
-
-import os, requests, csv
-VT_KEY = os.getenv("VT_API_KEY")
-OTX_KEY = os.getenv("OTX_API_KEY")
-
-def vt_lookup_hash(h):
-    url = f"https://www.virustotal.com/api/v3/files/{h}"
-    headers = {"x-apikey": VT_KEY}
-    r = requests.get(url, headers=headers)
-    return r.json() if r.status_code==200 else None
-
-def otx_indicator(indicator):
-    url = f"https://otx.alienvault.com/api/v1/indicators/ipv4/{indicator}/general"
-    headers = {"X-OTX-API-KEY": OTX_KEY}
-    r = requests.get(url, headers=headers)
-    return r.json() if r.status_code==200 else None
-
-
-Run the script with iocs.txt (one IOC per line) and produce enriched_iocs.csv with fields like ioc,type,vt_malicious_votes,otx_pulses,last_seen.
-
-Use enrichment results to tag Sigma/Splunk alerts or to automatically create a prioritized ticket in your tracker.
-
-Deliverables
-
-tools/enrich/virus_otx_enrich.py (well-documented)
-
-Sample iocs.txt and enriched_iocs.csv
-
-References: VirusTotal & OTX API docs. 
-VirusTotal Docs
-+1
-
-Lab 4 — Script IOC extraction from logs (deliverable: tools/parse_logs/parse_iocs.py)
-
-Goal: Script that parses log files (Sysmon/Zeek/ELK exports) and extracts IOCs automatically.
-
-Steps
-
-Write parse_iocs.py that:
-
-Accepts a log file (json/ndjson or CSV)
-
-Regex-extracts IPs, domains, hashes, emails
-
-Deduplicates and writes iocs_extracted.txt
-
-Example regex snippets (Python):
-
-import re
-ip_re = re.compile(r"(?:\d{1,3}\.){3}\d{1,3}")
-hash_re = re.compile(r"\b[a-fA-F0-9]{64}\b")
-domain_re = re.compile(r"\b(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}\b")
-
-def extract_iocs(text):
-    return set(ip_re.findall(text)) | set(hash_re.findall(text)) | set(domain_re.findall(text))
-
-
-Pipe parsed IOCs into tools/enrich/virus_otx_enrich.py for enrichment.
-
-Deliverables
-
-tools/parse_logs/parse_iocs.py + unit test examples
-
-TryHackMe & other lab references
-
-TryHackMe rooms / learning paths that map well to this module:
-
-Threat Hunting with YARA (community writeups exist; use to practice YARA creation). 
-Medium
-
-SOC / Detection Engineering rooms (Sigma, SIEM-focused) — search TryHackMe for Sigma/SIEM content.
-
-Handbooks & collections: Blue Team Handbook is a compact field guide for SOC/SIEM/hunting use-cases. 
-Dokumen
-+1
-
-Sample Sigma rule (template)
-
-Place this in detections/sigma/suspicious-ps-encoded.yml and use pySigma to convert.
-
+```yaml
 title: Suspicious Encoded PowerShell Execution
 id: 2a5b1c3d-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 status: experimental
-description: Detects process creation where command line contains 'powershell -enc' or similar encoded flags.
+description: Detects encoded PowerShell commandlines.
 author: Your Name
 date: 2025/09/26
 logsource:
@@ -222,20 +179,18 @@ detection:
 falsepositives:
   - Admins running encoded scripts
 level: medium
+```
 
+---
 
-Convert with Sigma CLI to Splunk/ELK and tune as needed. 
-sigmahq.io
+## Sample YARA Rule
 
-Sample YARA rule (template)
-
-Place in detections/yara/powershell_encoded.yar:
-
+```yara
 rule Powershell_Encoded_OneLiner
 {
   meta:
     author = "Your Name"
-    description = "Detect common encoded PowerShell flags in scripts or memory"
+    description = "Detect common encoded PowerShell flags"
     date = "2025-09-26"
   strings:
     $s1 = "-enc" nocase
@@ -244,11 +199,13 @@ rule Powershell_Encoded_OneLiner
   condition:
     any of them
 }
+```
 
+---
 
-Test with yara detections/yara/powershell_encoded.yar samples/ -r.
+## Recommended Repo Structure
 
-GitHub repo structure (recommended)
+```
 advanced-threat-hunting/
 ├─ detections/
 │  ├─ sigma/
@@ -267,78 +224,50 @@ advanced-threat-hunting/
 │  ├─ lab-sigma-pipeline/README.md
 │  └─ lab-yara-testing/README.md
 └─ README.md  <-- this file
+```
 
-Notes & PDFs to include in repo
+---
 
-Link / store (small excerpts or links only) to:
+## Notes & PDFs to Include
 
-Sigma project (official) — Sigma rule format & converters. 
-GitHub
-+1
+- [Sigma project (rules & tools)](https://github.com/SigmaHQ/sigma)
+- [Florian Roth / neo23x0](https://github.com/Neo23x0/signature-base) (YARA & detection resources)
+- [MISP (Threat Intel Platform)](https://github.com/MISP/MISP)
+- [OpenCTI (Threat Intel Platform)](https://github.com/OpenCTI-Platform/opencti)
+- [AlienVault OTX API docs](https://otx.alienvault.com/api)
+- [VirusTotal API docs](https://developers.virustotal.com/reference/overview)
+- Blue Team Handbook (SOC/SIEM/Hunting notes) — link or fair-use excerpt only
 
-Florian Roth / neo23x0 repos for rule examples (signature-base / yarGen). 
-GitHub
-+1
+---
 
-MISP & OpenCTI docs (TIP platforms). 
-GitHub
-+1
+## Deliverables Checklist
 
-VirusTotal & OTX API docs (for enrichment automation). 
-VirusTotal Docs
-+1
+- `detections/yara/` — 3 tested YARA rules + test cases
+- `detections/sigma/` — 5 Sigma rules (PowerShell, Persistence, Lateral Movement, RDP abuse, Data Exfil)
+- `tools/sigma-pipeline/` — conversion & deployment scripts + CI workflow
+- `tools/enrich/virus_otx_enrich.py` — enrichment script + sample output
+- `tools/parse_logs/parse_iocs.py` — log parser for IOCs
+- Lab READMEs for reproducibility
 
-Blue Team Handbook PDF (reference/read). 
-Dokumen
-+1
+---
 
-Keep PDFs as pointers/links if you cannot store them directly (copyright). When including snippets, keep under fair-use length and always cite.
+## Next Steps
 
-Deliverables checklist (for this module)
+1. Pick one Sigma rule, convert to Splunk, and test with replayed logs.
+2. Pick one YARA rule and test against known samples.
+3. Build enrichment script and run on IOCs from lab logs.
+4. Add all to GitHub repo and create a short lab-report.pdf documenting methodology and results.
 
- detections/yara/ — 3 tested YARA rules + test cases
+---
 
- detections/sigma/ — 5 Sigma rules covering common TTPs (PowerShell, Persistence, Lateral Movement, RDP abuse, Data Exfil)
+## Helpful Links
 
- tools/sigma-pipeline/ — conversion & deployment scripts + CI workflow
+- [Sigma project](https://github.com/SigmaHQ/sigma)
+- [Florian Roth / neo23x0](https://github.com/Neo23x0/signature-base)
+- [MISP](https://github.com/MISP/MISP)
+- [OpenCTI](https://github.com/OpenCTI-Platform/opencti)
+- [AlienVault OTX API docs](https://otx.alienvault.com/api)
+- [VirusTotal API docs](https://developers.virustotal.com/reference/overview)
+- Blue Team Handbook (SOC/SIEM/Hunting notes)
 
- tools/enrich/virus_otx_enrich.py — enrichment script with sample output
-
- tools/parse_logs/parse_iocs.py — log parser to extract IOCs
-
- Lab READMEs for reproducibility (commands, test data, snapshots)
-
-Next steps (suggested)
-
-Pick one Sigma rule and convert it to Splunk — commit converted SPL and test with replayed logs.
-
-Pick one YARA rule and test against known samples (or safe test files).
-
-Build enrichment script and run it on IOCs extracted from lab logs.
-
-Add everything to your GitHub repo and create a short lab-report.pdf (Markdown → PDF) documenting methodology, tests, and results.
-
-Helpful links (useful starting points)
-
-Sigma project (rules & tools). 
-GitHub
-+1
-
-Florian Roth / neo23x0 (YARA & detection resources). 
-GitHub
-
-MISP (Threat Intel Platform). 
-GitHub
-
-OpenCTI (Threat Intel Platform). 
-GitHub
-
-AlienVault OTX API docs. 
-LevelBlue Open Threat Exchange
-
-VirusTotal API docs. 
-VirusTotal Docs
-
-Blue Team Handbook (SOC/SIEM/Hunting notes). 
-Dokumen
-+1
+---
