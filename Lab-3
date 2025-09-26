@@ -1,0 +1,209 @@
+# Repository: threat-hunting-playbook
+
+This document contains three ready-to-commit files you can copy into your GitHub repo:
+
+1. `README.md` — repo-level overview and TL;DR
+2. `case-README.md` — a case-specific template you can copy into each lab folder
+3. `detections/sigma/suspicious-runkey.yml` — a sample Sigma rule (experimental)
+
+---
+
+## File: README.md
+
+```markdown
+# Threat Hunting Playbook & Blue Team Portfolio
+
+**TL;DR**
+This repository contains threat-hunting labs, playbooks, detection artifacts (Sigma/YARA/Splunk), and case writeups to demonstrate hands-on Incident Response (IR) and Threat Hunting skills. Each lab is reproducible in a small home VM lab (Windows victim + Linux sensor + SIEM) and mapped to MITRE ATT&CK techniques.
+
+---
+
+## Repo layout
+
+```
+
+threat-hunting-playbook/
+├─ labs/
+│  ├─ lab-a-pcap-analysis/
+│  ├─ lab-b-memory-analysis/
+│  └─ lab-c-persistence-registry/
+├─ playbooks/
+│  └─ persistence-hunt-playbook.md
+├─ detections/
+│  ├─ sigma/
+│  │  └─ suspicious-runkey.yml
+│  ├─ yara/
+│  └─ splunk/
+├─ case-studies/
+│  └─ case-2025-09-26-runkey-infection.md
+└─ README.md
+
+```
+
+---
+
+## How to use this repo
+1. Clone the repo to your analyst machine.
+2. Read each lab's `README.md` for preconditions (VM images, snapshots).
+3. Run labs in an isolated network. Always snapshot VMs before running adversary simulations.
+4. For each lab: produce artifacts (pcap, memory dump snippets), a `case-README.md`, and detection artifacts (Sigma/YARA/Splunk queries).
+
+---
+
+## What this demonstrates
+- Hypothesis-driven threat hunting mapped to MITRE ATT&CK
+- Memory forensics (Volatility) and PCAP analysis (Zeek/Wireshark)
+- Detection engineering (Sigma → platform conversions, SIEM alerts)
+- End-to-end IR workflow (detect → contain → eradicate → recover → report)
+
+---
+
+## Quick links & useful resources
+- MITRE ATT&CK — https://attack.mitre.org/
+- Atomic Red Team — https://github.com/redcanaryco/atomic-red-team
+- Volatility 3 — https://www.volatilityfoundation.org/
+- Zeek (Bro) — https://zeek.org/
+- SwiftOnSecurity Sysmon config — https://github.com/SwiftOnSecurity/sysmon-config
+- Sigma project — https://github.com/SigmaHQ/sigma
+
+---
+
+## Contribution / Notes
+- Add a new folder under `labs/` for each exercise and include `case-README.md` and artifacts.
+- Keep sensitive data out of the repo. Trim memory/pcap files before committing (include only trimmed or redacted artifacts).
+
+```
+
+````
+
+---
+
+## File: case-README.md
+
+```markdown
+# Case: {CASE-TITLE}
+
+> Replace `{CASE-TITLE}` with a short descriptive title (e.g., "Suspicious RunKey Autostart with Outbound HTTP").
+
+## Summary (1-2 lines)
+A short executive summary describing the incident and the main findings.
+
+## Dates & Environment
+- **Date performed:** YYYY-MM-DD
+- **Lab environment:** Windows 10 (snapshot ID), Ubuntu sensor, SIEM (ELK/Splunk Free)
+- **Atomic tests used:** e.g., Atomic Red Team - T1547 (Persistence) - Test #1
+
+## Hypothesis & ATT&CK Mapping
+- **Hypothesis:** A non‑standard binary was added to `HKLM\Software\Microsoft\Windows\CurrentVersion\Run` and then made outbound HTTP connections.
+- **ATT&CK Techniques:**
+  - T1547 (Boot or Logon Autostart Execution)
+  - T1071 (Application Layer Protocol)
+
+## Data Sources
+- Sysmon (Process Create, Registry, Network Connect)
+- Windows Event Logs (Security, System)
+- PCAP / Zeek logs (conn.log, http.log)
+- Memory dump (winpmem/WinPMEM → memory.raw)
+
+## Step-by-step timeline
+1. **T0 - Preparation**: snapshot, enable Sysmon with provided config.
+2. **T1 - Trigger**: Ran Atomic test `T1547 - <id>` on victim at `2025-09-26T10:05:00Z`.
+3. **T2 - Detection**: Sysmon EventID 13 (Registry value set) for `HKLM...\Run` at `2025-09-26T10:05:12Z`.
+4. **T3 - Correlation**: Sysmon EventID 1 (Process Create) for `malicious.exe` at `2025-09-26T10:05:22Z`.
+5. **T4 - Network**: Zeek `http.log` shows outbound GET to `malicious.example.com` at `2025-09-26T10:05:28Z`.
+6. **T5 - Memory**: Memory dump captured; Volatility shows injected module in `malicious.exe`.
+
+## Artifacts & IOCs
+- **Files:** `artifacts/malicious.exe` (SHA256: <hash>)
+- **PCAP:** `artifacts/capture.pcap` (trimmed)
+- **Memory:** `artifacts/memory-heap-dump.raw` (trimmed)
+- **IOCs (ioc.txt):**
+  - IPs: 1.2.3.4
+  - Domains: malicious.example.com
+  - Hashes: <sha256>
+
+> ⚠️ Do not publish sensitive internal IPs or unhashed credentials. Redact when necessary.
+
+## Detections Developed
+- Sigma rule: `detections/sigma/suspicious-runkey.yml`
+- Splunk search: `splunk/runkey_correlation_search.txt`
+
+## Actions Taken (Lab)
+- Isolated VM from network
+- Stopped process `malicious.exe`
+- Removed registry values
+- Collected memory and disk artifacts
+
+## Remediation & Recommendations
+- Block domain `malicious.example.com` at perimeter
+- Add Sigma rule to SIEM and tune for false positives
+- Ensure EDR sensors deployed on endpoints
+
+## Lessons Learned
+- Default Sysmon configs may produce noisy registry events; tune to focus on relevant keys and process contexts.
+- Always snapshot before adversary simulation.
+
+## Repro steps
+1. Restore victim snapshot `snap-2025-09-25`.
+2. Import Sysmon config `sysmon/sysmonconfig-export.xml` and start Sysmon.
+3. Run Atomic Red Team test: `Invoke-AtomicTest -Technique T1547 -TestNumbers 1`.
+4. Capture PCAP on sensor and memory using WinPmem.
+
+## Files (in this folder)
+- `capture.pcap` — trimmed pcap
+- `memory.raw` — trimmed memory dump
+- `volatility_output/` — selected plugin outputs
+- `ioc.txt` — list of IOCs
+- `sigma/` — Sigma rule(s) used
+
+````
+
+````
+
+---
+
+## File: detections/sigma/suspicious-runkey.yml
+
+```yaml
+# Suspicious Run Key Added Followed By Network Activity
+# Experimental Sigma rule - tune before production
+
+title: Suspicious Run Key Added Followed By Network Activity
+id: e1a12f3a-9d9a-4a92-8bb3-0a1b2c3d4e5f
+status: experimental
+description: Detects when a process writes a value into a Run autostart registry key and the same process makes a network connection shortly after.
+author: Your Name <youremail@example.com>
+date: 2025/09/26
+references:
+  - https://attack.mitre.org/techniques/T1547/
+  - https://github.com/SigmaHQ/sigma
+tags:
+  - attack.persistence
+  - attack.T1547
+  - detection
+
+logsource:
+  product: windows
+  service: sysmon
+
+detection:
+  selection_registry:
+    SysmonEventID: 13
+    TargetObject|contains: '\\CurrentVersion\\Run\\'
+  selection_network:
+    SysmonEventID: 3
+  condition: selection_registry and selection_network
+
+falsepositives:
+  - Legitimate installers and administrative automation
+
+level: high
+
+# Notes:
+# - This rule assumes Sysmon is configured to log Registry (EventID 13) and Network (EventID 3) events.
+# - Timestamps need correlation by ProcessGuid or ProcessId to ensure same process context. Convert to platform-specific query when deploying.
+````
+
+---
+
+*End of document.*
