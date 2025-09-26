@@ -1,165 +1,104 @@
 1. Key Security & IR Concepts
-Common Interview Questions
-Question	Answer / Explanation
-What is the cyber kill chain?	A model describing stages of a cyberattack: Reconnaissance → Weaponization → Delivery → Exploitation → Installation → Command & Control (C2) → Actions on Objectives. Helps defenders detect and stop attacks at each stage.
-Explain MITRE ATT&CK.	A knowledge base of adversary tactics and techniques. ATT&CK maps real-world attack techniques to detection and mitigation strategies.
-What are the phases of an incident response (IR) lifecycle?	1. Preparation
-2. Identification
-3. Containment
-4. Eradication
-5. Recovery
-6. Lessons Learned
-What is the difference between an IOC and an IOA?	IOC (Indicator of Compromise): Evidence of a past attack (IP, hash, domain).
-IOA (Indicator of Attack): Evidence of an attack in progress (suspicious process behavior, lateral movement).
-How do you measure SOC/IR effectiveness?	Metrics: MTTD (Mean Time to Detect), MTTR (Mean Time to Respond), false positives, incident counts.
-Lab / Practical
-
-Goal: Map a simple simulated attack to the Kill Chain and MITRE ATT&CK.
-
+Common Interview Questions (with concise answers)
+Cyber Kill Chain:
+Describes the stages of a cyberattack (Recon → Weaponization → Delivery → Exploitation → Installation → C2 → Actions on Objectives). Defenders can disrupt attacks at each stage.
+MITRE ATT&CK:
+A knowledge base mapping real-world adversary tactics/techniques to detection/mitigation.
+IR Lifecycle Phases:
+Preparation
+Identification
+Containment
+Eradication
+Recovery
+Lessons Learned
+IOC vs IOA:
+IOC: Evidence of past attack (IP, hash, domain).
+IOA: Evidence of ongoing attack (e.g., suspicious process, lateral movement).
+Measuring SOC/IR:
+Metrics: MTTD, MTTR, false positives, incident counts.
+Lab Exercise
+Goal: Map simulated attack to Kill Chain & MITRE ATT&CK.
 Steps:
-
-Setup Lab: Windows 10 VM + Kali Linux VM + SIEM (e.g., Wazuh or Splunk Free Trial).
-
-Simulate Attack: Use metasploit to run a controlled exploit against Windows VM.
-
-Log Collection: Collect Windows Event logs, Sysmon logs, and network traffic.
-
-Analysis: Map observed behavior to Kill Chain stages and MITRE ATT&CK tactics.
-
-Screenshot Example:
-
-Sysmon detecting ProcessCreate of powershell.exe
-
-Network logs showing DNS queries to suspicious domain
-
-Diagram:
-
+Setup: Windows 10 VM + Kali Linux VM + SIEM (Wazuh/Splunk).
+Simulate attack (e.g., Metasploit exploit on Windows).
+Collect logs: Windows Events, Sysmon, network traffic.
+Analyze logs: Map to Kill Chain & MITRE ATT&CK.
+Capture screenshots of detections.
+Sample Diagram
+Code
 Recon → Weaponization → Delivery → Exploitation → Installation → C2 → Actions
-  |       |               |             |             |        |
-  Log1    Log2           Log3          Log4          Net1     Alert1
-
+  |         |             |            |            |         |
+  [Log1]  [Log2]       [Log3]       [Log4]       [Net1]   [Alert1]
 2. Threat Intelligence (TTPs, IOCs/IOAs)
 Common Interview Questions
-Question	Answer
-What are TTPs?	Tactics, Techniques, and Procedures used by attackers. Tactics = goal, Techniques = method, Procedures = step-by-step.
-How do you gather threat intelligence?	OSINT (Open Source), CTI feeds, honeypots, SIEM alerts, MITRE ATT&CK mapping.
-How is threat intelligence applied in SOC?	Prioritize alerts, block malicious IPs, detect patterns in logs, create custom detection rules.
-Lab / Practical
-
-Goal: Detect IOCs/IOAs in a lab environment.
-
+TTPs: Tactics (goal), Techniques (method), Procedures (steps).
+Gathering Threat Intel: OSINT, CTI feeds, honeypots, SIEM, MITRE mapping.
+SOC Use: Prioritize alerts, block IOCs, detect patterns, custom rules.
+Lab Exercise
+Goal: Detect IOCs/IOAs in logs.
 Steps:
-
-Configure Windows Event logging + Sysmon.
-
-Create simulated IOC: malicious hash, suspicious IP.
-
-Use Splunk/Wazuh to query logs for matches.
-
-Example Query (Splunk):
-
+Configure Windows logging + Sysmon.
+Generate simulated IOC (malicious hash/IP).
+Query logs in SIEM for matches.
+Sample Splunk Query
+Code
 index=windows sourcetype=Sysmon EventCode=1 Hashes="*malware_hash*"
-
-
-Screenshot: Splunk showing IOC match with time, user, and host.
-
-3. Reading & Interpreting Logs (Windows, Sysmon, Linux)
+3. Reading & Interpreting Logs
 Common Interview Questions
-Question	Answer
-How do you detect suspicious activity in Windows logs?	Look for unexpected logon times, new processes, failed logons, privilege escalation events.
-What are the key Sysmon events to monitor?	ProcessCreate (1), NetworkConnect (3), FileCreate (11), RegistryEvent (13).
-How do you analyze Linux logs?	/var/log/auth.log, /var/log/syslog, journalctl for system/service logs.
-Lab / Practical
-
-Goal: Detect suspicious login and process activity.
-
+Suspicious Windows Activity: Unexpected logons, new/odd processes, failed logons, privilege escalations.
+Key Sysmon Events: ProcessCreate (1), NetworkConnect (3), FileCreate (11), RegistryEvent (13).
+Linux Log Analysis:
+/var/log/auth.log
+/var/log/syslog
+journalctl
+Lab Exercise
+Goal: Detect suspicious logins/processes.
 Steps:
-
-Generate normal activity + suspicious activity (e.g., nc reverse shell).
-
-Analyze Windows Event Logs (Event Viewer) and Linux logs (/var/log).
-
-Highlight anomalies like unusual process execution, failed logons, privilege escalation.
-
-Screenshot Example:
-
-Windows Event Viewer showing EventID 4625 (failed logon)
-
-Linux auth.log showing sudo execution by non-admin user
-
-Diagram:
-
+Generate activity (normal + malicious).
+Analyze logs (Windows Event Viewer, Linux CLI).
+Highlight anomalies.
+Sample Diagram
+Code
 User Login → Log Event → SIEM Alert → Analyst Review → Response
-
-4. Understanding Basic Network Traffic (TCP/IP, DNS, HTTP/S)
+4. Understanding Basic Network Traffic
 Common Interview Questions
-Question	Answer
-How do you detect suspicious network traffic?	Unusual ports, external IPs, abnormal traffic volume, failed connections.
-Difference between TCP and UDP?	TCP: Connection-oriented, reliable.
-UDP: Connectionless, faster, unreliable.
-How is DNS abused by attackers?	Domain generation algorithms (DGA), data exfiltration, C2 communication.
-How to monitor HTTP/S traffic?	Use Wireshark, Zeek, or SIEM network logs.
-Lab / Practical
-
-Goal: Capture and analyze network traffic.
-
+Detecting Suspicious Traffic: Unusual ports, external IPs, high volume, failed connects.
+TCP vs UDP:
+TCP: Reliable, connection-oriented.
+UDP: Fast, connectionless, unreliable.
+DNS Abuse: DGA, exfiltration, C2.
+HTTP/S Monitoring: Wireshark, Zeek, SIEM.
+Lab Exercise
+Goal: Capture/analyze traffic.
 Steps:
-
-Setup Wireshark on Kali Linux or Windows.
-
-Simulate traffic: normal web browsing + controlled malicious traffic.
-
-Analyze TCP sessions, HTTP headers, DNS queries for anomalies.
-
-Screenshot Example:
-
-Wireshark showing suspicious HTTP POST to external IP
-
-DNS query logs showing repeated failed resolutions
-
-Diagram:
-
-[Internal VM] → TCP/HTTP → [External IP] → SIEM logs → Analyst detection
-
+Use Wireshark.
+Simulate normal + malicious traffic.
+Analyze sessions, headers, DNS queries.
+Sample Diagram
+Code
+[Internal VM] → TCP/HTTP → [External IP] → SIEM Logs → Analyst Detection
 5. Working Lab Setup
-
-Requirements:
-
-Windows VM: For endpoint logs and simulated attacks
-
-Linux VM: For attacks, monitoring, and Sysmon forwarding
-
-SIEM: Wazuh, Splunk, or ELK stack
-
-Log collection: Sysmon, auditd, Windows Event Logs
-
-Network monitoring: Wireshark or Zeek
-
-Diagram:
-
+Requirements
+Windows VM (endpoint logs, attacks)
+Linux VM (attack simulation, monitoring)
+SIEM (Wazuh, Splunk, ELK)
+Log Collection (Sysmon, auditd, Windows logs)
+Network Monitoring (Wireshark, Zeek)
+Sample Diagram
+Code
 Windows VM ──┐
              │──> Log Forwarder ──> SIEM ──> Dashboard / Alerts
 Linux VM ────┘
-
-
-Lab Practical Tasks for Interview:
-
-Collect logs using Sysmon / auditd
-
+Lab Practical Tasks for Interview
+Collect logs (Sysmon/auditd)
 Forward logs to SIEM
-
-Detect a simulated malware execution or suspicious network traffic
-
-Map findings to MITRE ATT&CK and Kill Chain
-
-Document screenshots and response steps
-
-✅ Tips for Interview Readiness
-
-Prepare screenshots of your lab: process execution, SIEM alerts, network capture.
-
-Be ready to explain your reasoning: "Why I flagged this IP as malicious", "How this map to Kill Chain".
-
-Know basic commands: eventvwr, Get-EventLog, journalctl, tcpdump, netstat.
-
-Prepare one diagram per lab scenario to explain flow visually.
+Detect simulated malware or network anomalies
+Map to MITRE ATT&CK/Kill Chain
+Document with screenshots & response steps
+Interview Readiness Tips
+Prepare annotated screenshots (SIEM, process execution, network captures)
+Be ready to explain reasoning and mapping to frameworks
+Practice key commands:
+Windows: eventvwr, Get-EventLog
+Linux: journalctl, tcpdump, netstat
+Prepare diagrams for each scenario
